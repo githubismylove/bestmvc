@@ -1,0 +1,23 @@
+{
+  "name": "mvct",
+  "version": "1.0.1",
+  "description": "nvc descri",
+  "main": "index.js",
+  "scripts": {
+    "test": "node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "no"
+  },
+  "keywords": [
+    "keywyq"
+  ],
+  "author": "wangyaqiang",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "express": "^4.17.1",
+    "npm": "^6.9.2",
+    "pug": "^2.0.4"
+  }
+}

@@ -1,2 +1,0 @@
-# bestmvc
-bestmvc是河北强商网络科技有限公司开发的基于nodejs运行环境的知名mvc开发框架
