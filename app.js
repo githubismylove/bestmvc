@@ -1,23 +1,64 @@
-var express = require('express');
-var app = express();
+const express = require('express');
+const app = express();
+const axios = require('axios');
+const bodyParser = require('body-parser');
+const multer = require('multer');
 //const pug = require('pug');
+const upload = multer({ dest: '/tmp'});//应该放到内存，然后在具体的操作中转移
+const fs = require("fs");
+const path=require("path");//路径处理，比如join等
 
-//var fs = require("fs");
+const mkdirp = require('mkdirp');//创建多级目录
 
-
-
+//定义项目根目录
+const ROOT_PATH = __dirname;
+//定义本地数据文件地址
+const DATA_FILE_PAHT = path.join(ROOT_PATH,'data');
+//定义本地上传文件目录
+const UPLOAD_PATH = path.join(DATA_FILE_PAHT,'upload');
+//定义本地日志文件目录
+const LOG_PATH = path.join(DATA_FILE_PAHT,'log');
 //初始化开始
 // 设置模板类型
 app.set('view engine', 'pug');
 // 设置模板文件路径
-app.set('views', './src/views');
+app.set('views', path.join(ROOT_PATH,'src','views'));
 //定义静态文件目录
-app.use('/public', express.static('public'));
+app.use('/public', express.static(path.join(ROOT_PATH,'public')));
+
+//var multer  = require('multer');
+ 
+//引入中间件解析post请求，这样才能直接使用req.body.表单名获取post信息，否则将返回undefiend，body为未定义
+app.use(bodyParser.urlencoded({ extended: false }));
 
 
-
-
-
+//gongong 函数
+/*
+name：存储错误日志
+param：存储内容string，存储文件路径
+auth：亚强
+date：19.7.3
+update:待改进，如果内容不是字符串，那么转换子串
+cat：日志类型 
+*/
+function saveLogError(data,logPath){
+  var myDate = new Date();
+  if(!logPath){
+    
+    //获取年月日分层目录
+    var logPath = path.join(LOG_PATH,'error-' + myDate.getFullYear() + (myDate.getMonth()+1) + myDate.getDate() + '.log');
+  }
+  data = "" + myDate.getFullYear() + '-' + (myDate.getMonth()+1) + '-' +  myDate.getDate() + " " + myDate.getHours()  + ':' + myDate.getMinutes() + ':' +myDate.getSeconds()  + " " + data  + "\r\n";
+  //fs.appendFile 追加文件内容
+  fs.appendFile(logPath,data, (error)  => {
+    if (error) {
+       console.log("追加文件失败" + error.message);
+       return true;
+    }
+    console.log("追加成功");
+    return false;
+  });
+}
 //定义路由，分三层 业务大类/控制器/方法
 /*
 view：也就是视图层，分三层，与路由对应。业务大类/控制器/方法
@@ -47,8 +88,8 @@ app.get('/web/getInfo', function (req, res) {
 })
 //案例三：通过模板解析,路径我们的确定规则分三层，业务大类/控制器/方法
 app.get('/web/user/getUserInfo', function (req, res) {
-	var data = {auth:'王晓晓'};
-	res.render('web/user/getUserInfo',data);
+  var data = {auth:'王晓晓'};
+  res.render('web/user/getUserInfo',data);
     /*
     //下面2行，效果与res.render一样，建议用res.render
     var html = pug.renderFile('src/Views/web/user/getUserInfo.pug',data);
@@ -57,20 +98,136 @@ app.get('/web/user/getUserInfo', function (req, res) {
 })
 
 //案例四：通过模板解析 控制器中加入ai模块的ajax向php接口请求数据，并加载到模板中
-app.get('/web/user/getUserInfo', function (req, res) {
-	var data = {auth:'王晓晓'};
-	res.render('web/user/getUserInfo',data);
+app.get('/web/user/getUserOthers', function (req, res) {
+  var data = {auth:'王晓晓'};
+  // Make a request for a user with a given ID
+  //axios.get('http://www.qiangshangkeji.com/user/api/getuserothers?id=203')；这里可以对应第三方交互地址，如果是内部业务，那么该地址应该配置localhost在内网访问提高速度，可增快40-70ms左右。
+  axios.get('http://localhost:8081/web/user/getUserOthersapi?id=203')
+  .then(function (response) {
+    // handle success
+    console.log(response);
+    res.render('web/user/getUserOthers',response.data.data);
+  })
+  .catch(function (error) {
+    // handle error
+    console.log(error);
+  })
+  .then(function () {
+    // always executed
+    console.log('executed ok');
+  });
+
+  
     /*
-    //下面2行，效果与res.render一样，建议用res.render
-    var html = pug.renderFile('src/Views/web/user/getUserInfo.pug',data);
-    res.send(html);
+    http://www.qiangshangkeji.com/user/api/getuserothers?id=203 端php代码案例：
+    public function getUserOthers()
+    {     
+        $id = $this->request->param("id");
+        if (empty($id)) {
+            $response['code'] = '400';
+            $response['data'] = array();
+            $response['mes'] = 'id not exist';
+        }else{
+            $data = array('name'=>'tp框架小米粒' . $id);
+            $response['code'] = '200';
+            $response['data'] = $data;
+            $response['mes'] = 'success';
+        }
+
+        echo json_encode($response);
+        exit();
+      }
+
+
     */
 })
-//案例五：post请求解析
+//案例五：get请求接口案例 http://localhost:8081/web/user/getUserOthersapi?id=203
+app.get('/web/user/getUserOthersapi', function (req, res) {
+  var data={};
+  data.data ={name:'王晓晓' + req.query.id};
+  data.code = '200';
+  res.send(JSON.stringify(data));
+
+})
+//案例六：get请求一个表单页面
+app.get('/web/user/submitpost', function (req, res) {
+  var data={};
+  res.render('web/user/submitpost',data);
+
+})
+//案例七：post表单提交后的接受页面
+app.post('/web/user/submitpost', function (req, res) {
+  var data={};
+  data.name = req.body.name;//前面需要引入中间件解析post格式的请求
+  data.url = req.body.url;
+  res.render('web/user/submitpost',data);
+})
+/*
+name：获取分层目录
+param：存储根目录，存储文件名
+auth：亚强
+date：19.7.3
+*/
+function uploadFile(uploadPath,filename){
+  var myDate = new Date();
+  //获取年月日分层目录
+  var savePathDir = path.join(UPLOAD_PATH,myDate.getFullYear().toString(),(myDate.getMonth()+1).toString(),myDate.getDate().toString());
+  var savePath = path.join(savePathDir,filename);
+
+  fs.readFile(uploadPath, function (err, data) {
+    try {
+      fs.accessSync(savePathDir, fs.constants.R_OK | fs.constants.W_OK);
+      console.log('可以读写');
+    } catch (err) {
+      console.error('无权访问');
+      mkdirp.sync(savePathDir,function(err){
+      })
+    }
+    fs.writeFile(savePath, data, function (err) {
+      if( err ){
+        return false;
+      }else{
+        return {'path':savePath};
+      }
+     });
+  });
+}
+ 
+ 
+//案例八：上传文件到本地的案例
+app.get('/web/user/file_upload', function (req, res) {
+  var data = {};
+  res.render('web/user/file_upload',data);
+});
+app.post('/web/user/file_upload', upload.fields([{ name: 'weblogo', maxCount: 8 },{ name: 'usertitle', maxCount: 8 }]),function (req, res) {
+  //正常开发可以使用for(var a in req.files) console.log(a);循环files，根据各个元素不同的name值a[0],a[1]或再次循环，进行不同的业务处理。当然前面使用upload.array,upload.single,upload.any代替upload.fields也可以。返回files结构不同。
+  console.log(req.files);
+  var filePath1 = uploadFile(req.files.weblogo[0].path,req.files.weblogo[0].originalname);//注意这里采用的是上传者电脑中的文件名命名，实际为了避免重复，一般重命名为一个唯一字符串名字+原来的扩展名的格式
+  var filePath2 = uploadFile(req.files.usertitle[0].path,req.files.usertitle[0].originalname);
+  //app.render('web/user/file_upload',{message:'上传成功啦！'});
+ 
+  // if(filePath1 && filePath2){
+  //   //这里进行业务加工，比如路径存储到数据库或者直接调用接口存储到数据库
+  //   app.render('web/user/file_upload',{message:'上传成功啦！'});
+  // }else{
+  //   app.render('web/user/file_upload',{message:'上传失败，请稍后重试！'});
+  // }
+  saveLogError('test code');
+  console.log(filePath1);
+  console.log(filePath2);
+  console.log('here');
+  var data ={message:'上传成功啦！'};
+  res.render('web/user/file_upload',data);
+ 
+})
 
 
-//案例六：上传文件到七牛云的案例，浏览器上传，本地接受传递成功后的地址。
-//案例七：上传文件到本地的案例
+
+
+
+//案例八：上传文件到七牛云的案例，浏览器上传，本地接受传递成功后的地址。
+
+
 //案例八：session本地处理案例
 //案例九：session统一存放到redis的案例。
 //案例十：cookie的处理案例
@@ -79,7 +236,7 @@ app.get('/web/user/getUserInfo', function (req, res) {
 
 //处理非法请求
 app.get('/*', function (req, res) {
-	res.send("error url " );
+  res.send("error url " );
 })
 
 // //初始化post请求中间件以及文件上传中间件

@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>post表单</title>
+<meta charset="UTF-8">  
+<link rel="stylesheet" href="/public/css/index.css" type="text/css" >
+</head>
+<body>
+    <form method="post" action="/web/user/submitpost">
+    <span>网站名： </span><input type='text' name="name" value="#{name}"><br>
+    <span>网站 URL： </span><input type='text' name="url"  value="#{url}"><br>
+    <input type="submit">
+    <p>网站名：#{name},网站URL:#{url}</p>
+    </form>
+</body>
+
+</html>

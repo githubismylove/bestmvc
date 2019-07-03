@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>post表单-河北强商网络科技有限公司</title>
+<meta charset="UTF-8">  
+<link rel="stylesheet" href="/public/css/index.css" type="text/css" >
+</head>
+<body>
+    <p id = 'auth'>文件上传啦-河北强商网络科技有限公司</p><br/>
+    <form action="/web/user/file_upload" method="post" enctype="multipart/form-data">
+    <span>网站logo： </span><input type='file' name="weblogo"  ><br/>
+    <span>网站所有人头像： </span><input type='file' name="usertitle"  ><br/>
+    <input type="submit">
+    </form>
+    <p>当前状态：#{message}</p>
+</body>
+
+</html>
